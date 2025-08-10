@@ -1,0 +1,667 @@
+﻿Build1=Default,b4a.example
+File1=ARCADECLASSIC.TTF
+File10=human.png
+File11=leaderboards.png
+File12=leaderpanel.png
+File13=loadingscreen.bal
+File14=log_in.png
+File15=main_menu.png
+File16=MainMenu.bal
+File17=normal.png
+File18=retry.png
+File19=return.png
+File2=bgmain.jpg
+File20=start.png
+File21=submit.png
+File22=title.png
+File23=welcome.png
+File24=zomHeart.png
+File25=zumbie.png
+File3=bgScore.png
+File4=cancel.png
+File5=cement.png
+File6=easy.png
+File7=Game.bal
+File8=game_over.png
+File9=hard.png
+FileGroup1=Default Group
+FileGroup10=Default Group
+FileGroup11=Default Group
+FileGroup12=Default Group
+FileGroup13=Default Group
+FileGroup14=Default Group
+FileGroup15=Default Group
+FileGroup16=Default Group
+FileGroup17=Default Group
+FileGroup18=Default Group
+FileGroup19=Default Group
+FileGroup2=Default Group
+FileGroup20=Default Group
+FileGroup21=Default Group
+FileGroup22=Default Group
+FileGroup23=Default Group
+FileGroup24=Default Group
+FileGroup25=Default Group
+FileGroup3=Default Group
+FileGroup4=Default Group
+FileGroup5=Default Group
+FileGroup6=Default Group
+FileGroup7=Default Group
+FileGroup8=Default Group
+FileGroup9=Default Group
+Group=Default Group
+Library1=core
+Library2=sql
+Library3=xui
+ManifestCode='This code will be applied to the manifest file during compilation.~\n~'You do not need to modify it in most cases.~\n~'See this link for for more information: https://www.b4x.com/forum/showthread.php?p=78136~\n~AddManifestText(~\n~<uses-sdk android:minSdkVersion="21" android:targetSdkVersion="34"/>~\n~<supports-screens android:largeScreens="true" ~\n~    android:normalScreens="true" ~\n~    android:smallScreens="true" ~\n~    android:anyDensity="true"/>)~\n~SetApplicationAttribute(android:icon, "@drawable/icon")~\n~SetApplicationAttribute(android:label, "$LABEL$")~\n~CreateResourceFromFile(Macro, Themes.LightTheme)~\n~'End of default text.~\n~
+Module1=Game
+Module2=loadingscreen
+Module3=Starter
+NumberOfFiles=25
+NumberOfLibraries=3
+NumberOfModules=3
+Version=13.1
+@EndOfDesignText@
+#Region  Activity Attributes 
+	#FullScreen: true
+	#IncludeTitle: false
+#End Region
+
+Sub Process_Globals
+	Public difficulty As String 
+	Public username As String 
+	Private sqlDB As SQL 
+	Public returnToPanel As String 
+	Public returningFromGameOver As Boolean
+End Sub
+
+Sub Globals
+	Private txtUsername As EditText 
+	Private btnSubmitUsername As ImageView 
+	Private lblPrompt As Label 
+	Private pnlUsernameInput As Panel 
+	
+	Private pnlStartPanel As Panel 
+	Private lblWelcome As Label 
+	Private btnStart As ImageView 
+	
+	Private pnlMainMenu As Panel 
+	Private btnEasy As ImageView 
+	Private btnNormal As ImageView 
+	Private btnHard As ImageView 
+	Private btnLeaderboard As ImageView 
+	
+	Private pnlLeaderboard As Panel 
+	Private lblLeaderboard As Label 
+	Private btnCloseLeaderboard As Button 
+	Private btnHard As ImageView
+	Private btnLeaderboard As ImageView
+	Private lblHowToPlay As Label
+End Sub
+
+Sub Activity_Create(FirstTime As Boolean)
+	StartActivity(loadingscreen)
+
+	Try
+		Activity.LoadLayout("MainMenu") 
+		
+		pnlStartPanel.SetBackgroundImage(LoadBitmap(File.DirAssets, "welcome.png"))
+		lblWelcome.Typeface = Typeface.LoadFromAssets("ARCADECLASSIC.TTF")
+		btnStart.SetBackgroundImage(LoadBitmap(File.DirAssets, "start.png"))
+		
+		pnlUsernameInput.SetBackgroundImage(LoadBitmap(File.DirAssets, "log_in.png"))
+		btnSubmitUsername.SetBackgroundImage(LoadBitmap(File.DirAssets, "submit.png"))
+		lblPrompt.Typeface = Typeface.LoadFromAssets("ARCADECLASSIC.TTF")
+		txtUsername.Typeface = Typeface.LoadFromAssets("ARCADECLASSIC.TTF")
+		
+		pnlMainMenu.SetBackgroundImage(LoadBitmap(File.DirAssets, "main_menu.png"))
+		btnEasy.SetBackgroundImage(LoadBitmap(File.DirAssets, "easy.png"))
+		btnNormal.SetBackgroundImage(LoadBitmap(File.DirAssets, "normal.png"))
+		btnHard.SetBackgroundImage(LoadBitmap(File.DirAssets, "hard.png"))
+		btnLeaderboard.SetBackgroundImage(LoadBitmap(File.DirAssets, "leaderboards.png"))
+		
+		pnlLeaderboard.SetBackgroundImage(LoadBitmap(File.DirAssets, "leaderpanel.png"))
+		lblLeaderboard.Typeface = Typeface.LoadFromAssets("ARCADECLASSIC.TTF")
+		btnCloseLeaderboard.SetBackgroundImage(LoadBitmap(File.DirAssets, "cancel.png"))
+		
+		lblHowToPlay.Typeface = Typeface.LoadFromAssets("ARCADECLASSIC.TTF")
+		
+		Dim bg As Bitmap
+		bg = LoadBitmap(File.DirAssets, "bgmain.jpg") ' or .png
+		Activity.SetBackgroundImage(bg)
+		
+	
+
+		Dim lblTitle As Label
+		lblTitle.Initialize("")
+		lblTitle.Text = "Login Screen"
+		lblTitle.TextSize = 24
+		lblTitle.Gravity = Gravity.CENTER
+		
+		If FirstTime Then
+			InitializeDatabase
+		End If
+
+		' Initialize all panels
+		HideAllPanels
+		ShowUsernamePrompt
+		ShowHowToPlay
+		
+		Log("Activity_Create completed successfully")
+	Catch
+		Log("Error in Activity_Create: " & LastException.Message)
+		ToastMessageShow("Error initializing app: " & LastException.Message, True)
+	End Try
+End Sub
+
+Sub InitializeDatabase
+	Try
+		If sqlDB.IsInitialized = False Then
+			sqlDB.Initialize(File.DirInternal, "leaderboard.db", True)
+			EnsureTableExists
+		End If
+		Log("Database initialized successfully")
+	Catch
+		Log("Error initializing database: " & LastException.Message)
+		ToastMessageShow("Error connecting to database", True)
+	End Try
+End Sub
+
+Sub HideAllPanels
+	Try
+		If pnlUsernameInput.IsInitialized Then pnlUsernameInput.Visible = False
+		If pnlStartPanel.IsInitialized Then pnlStartPanel.Visible = False
+		If pnlMainMenu.IsInitialized Then pnlMainMenu.Visible = False
+		If pnlLeaderboard.IsInitialized Then pnlLeaderboard.Visible = False
+	Catch
+		Log("Error hiding panels: " & LastException.Message)
+	End Try
+End Sub
+
+Sub ShowUsernamePrompt
+	Try
+		HideAllPanels
+		If pnlUsernameInput.IsInitialized Then pnlUsernameInput.Visible = True
+		If lblPrompt.IsInitialized Then lblPrompt.Text = "Enter your username to continue:"
+		If btnSubmitUsername.IsInitialized Then 
+		If txtUsername.IsInitialized Then txtUsername.Text = "" ' Clear username field
+		Log("ShowUsernamePrompt completed")
+		End If
+	Catch
+		Log("Error in ShowUsernamePrompt: " & LastException.Message)
+		ToastMessageShow("Error showing username prompt", True)
+	End Try
+End Sub
+
+Sub btnSubmitUsername_Click
+	Try
+
+		InitializeDatabase
+		
+	
+		Dim inputUsername As String = ""
+		If txtUsername.IsInitialized Then
+			inputUsername = txtUsername.Text.Trim
+		End If
+		
+		If inputUsername = "" Then
+			ToastMessageShow("Please enter a username.", True)
+			Return
+		End If
+		
+		username = inputUsername
+		Log("Username set to: " & username)
+		EnsurePlayerInLeaderboard(username)
+		ShowStartPanel
+		
+		Log("btnSubmitUsername_Click completed")
+	Catch
+		Log("Error in btnSubmitUsername_Click: " & LastException.Message)
+		ToastMessageShow("Error processing username", True)
+	End Try
+End Sub
+
+Sub ShowStartPanel
+	Try
+		HideAllPanels
+		If pnlStartPanel.IsInitialized Then pnlStartPanel.Visible = True
+		If lblWelcome.IsInitialized Then
+			If username <> "" Then
+				lblWelcome.Text = "Welcome, " & username & "!"
+			Else
+				lblWelcome.Text = "Welcome to the Game!"
+			End If
+		End If
+		If btnStart.IsInitialized Then
+		Log("ShowStartPanel completed")
+		End If
+	Catch
+		Log("Error in ShowStartPanel: " & LastException.Message)
+		ToastMessageShow("Error showing start panel", True)
+	End Try
+End Sub
+
+Sub btnStart_Click
+	Try
+		Log("btnStart_Click called")
+		ShowDifficultySelection
+		Log("btnStart_Click completed")
+	Catch
+		Log("Error in btnStart_Click: " & LastException.Message)
+		ToastMessageShow("Error starting game: " & LastException.Message, True)
+	End Try
+End Sub
+
+Sub ShowDifficultySelection
+	Try
+		HideAllPanels
+        
+		If pnlMainMenu.IsInitialized Then pnlMainMenu.Visible = True
+		If btnEasy.IsInitialized Then btnEasy.Visible = True
+		If btnNormal.IsInitialized Then btnNormal.Visible = True
+		If btnHard.IsInitialized Then btnHard.Visible = True
+		If btnLeaderboard.IsInitialized Then btnLeaderboard.Visible = True
+
+		Log("ShowDifficultySelection completed")
+        
+	Catch
+		Log("Error in ShowDifficultySelection: " & LastException.Message)
+		ToastMessageShow("Error showing difficulty selection", True)
+	End Try
+End Sub
+
+
+Sub btnEasy_Click
+	Try
+		StartGame("Easy")
+	Catch
+		Log("Error in btnEasy_Click: " & LastException.Message)
+		ToastMessageShow("Error starting easy game", True)
+	End Try
+End Sub
+
+Sub btnNormal_Click
+	Try
+		StartGame("Normal")
+	Catch
+		Log("Error in btnNormal_Click: " & LastException.Message)
+		ToastMessageShow("Error starting Normal game", True)
+	End Try
+End Sub
+
+Sub btnHard_Click
+	Try
+		StartGame("Hard")
+	Catch
+		Log("Error in btnHard_Click: " & LastException.Message)
+		ToastMessageShow("Error starting hard game", True)
+	End Try
+End Sub
+
+Sub btnLeaderboard_Click
+	Try
+		InitializeDatabase
+		
+		If username <> "" Then
+			EnsurePlayerInLeaderboard(username)
+		End If
+		
+		UpdateLeaderboardDisplay
+		HideAllPanels
+		If pnlLeaderboard.IsInitialized Then pnlLeaderboard.Visible = True
+		returnToPanel = "difficulty" ' Set to return to difficulty selection after closing leaderboard
+	Catch
+		Log("Error in btnLeaderboard_Click: " & LastException.Message)
+		ToastMessageShow("Error showing leaderboard", True)
+	End Try
+End Sub
+
+Sub StartGame(diff As String)
+	Try
+		InitializeDatabase
+		
+		If username = "" Then
+			Log("ERROR: Username is empty, cannot start game")
+			ToastMessageShow("Error: Please enter a username first", True)
+			Return
+		End If
+		
+		difficulty = diff
+		returnToPanel = "difficulty" ' Return to difficulty selection after game
+		Log("Starting game with difficulty: " & diff & ", username: " & username)
+		StartActivity(Game)
+		Log("StartActivity(Game) completed")
+	Catch
+		Log("Error in StartGame: " & LastException.Message)
+		ToastMessageShow("Error starting game: " & LastException.Message, True)
+	End Try
+End Sub
+
+Sub btnCloseLeaderboard_Click
+	Try
+		If pnlLeaderboard.IsInitialized Then pnlLeaderboard.Visible = False
+		If returnToPanel = "difficulty" Then
+			ShowDifficultySelection
+		Else
+			ShowStartPanel
+		End If
+	Catch
+		Log("Error in btnCloseLeaderboard_Click: " & LastException.Message)
+		ToastMessageShow("Error closing leaderboard", True)
+	End Try
+End Sub
+
+Sub Activity_Resume
+	Try
+		InitializeDatabase
+
+		If username <> "" Then
+			EnsurePlayerInLeaderboard(username)
+			UpdateLeaderboardDisplay
+		End If
+
+		If returningFromGameOver Then
+			Log("Returning from game over, not showing any panels")
+			Return
+		End If
+
+		If username <> "" Then
+			If returnToPanel = "difficulty" Then
+				ShowDifficultySelection
+			Else
+				ShowStartPanel
+			End If
+		Else
+			ShowUsernamePrompt
+		End If
+
+		Log("Activity_Resume completed")
+	Catch
+		Log("Error in Activity_Resume: " & LastException.Message)
+		ToastMessageShow("Error resuming activity", True)
+	End Try
+End Sub
+
+Public Sub ShowDifficultyFromGame
+	Try
+		ShowDifficultySelection
+	Catch
+		Log("Error in ShowDifficultyFromGame: " & LastException.Message)
+	End Try
+End Sub
+
+Public Sub SetReturnPanel(panel As String)
+	Try
+		returnToPanel = panel
+		Log("Return panel set to: " & panel)
+	Catch
+		Log("Error in SetReturnPanel: " & LastException.Message)
+	End Try
+End Sub
+
+Public Sub UpdateScoreInLeaderboard(finalScore As Int)
+	Try
+		Log("=== UpdateScoreInLeaderboard START ===")
+		Log("Username: " & username)
+		Log("Final Score: " & finalScore)
+		Log("Difficulty: " & difficulty)
+		
+
+		If username = "" Then
+			Log("ERROR: Username is empty")
+			ToastMessageShow("Error: No username set", True)
+			Return
+		End If
+		
+		If finalScore < 0 Then
+			Log("ERROR: Invalid score")
+			Return
+		End If
+		
+	
+		InitializeDatabase
+		
+	
+		Dim currentTime As Long = DateTime.Now
+		Dim formattedDate As String = DateTime.Date(currentTime)
+		
+		Dim cursor As Cursor
+		cursor = sqlDB.ExecQuery2("SELECT total_score, highest_score FROM leaderboard WHERE username = ?", Array As String(username))
+		
+		If cursor.RowCount > 0 Then
+				
+			cursor.Position = 0
+			Dim currentTotalScore As Int = cursor.GetInt("total_score")
+			Dim currentHighestScore As Int = cursor.GetInt("highest_score")
+			
+			Dim newTotalScore As Int = currentTotalScore + finalScore
+			
+			Dim newHighScore As Int = Max(currentHighestScore, finalScore)
+			
+			If finalScore > currentHighestScore Then
+				ToastMessageShow("New high score: " & finalScore & "!", True)
+				Log("New high score achieved: " & finalScore)
+			End If
+			
+			sqlDB.ExecNonQuery2("UPDATE leaderboard SET total_score = ?, highest_score = ?, last_played = ? WHERE username = ?", _
+				Array As Object(newTotalScore, newHighScore, formattedDate, username))
+			
+			Log("Updated existing record - Total score: " & newTotalScore & ", High score: " & newHighScore)
+		Else
+			sqlDB.ExecNonQuery2("INSERT INTO leaderboard (username, total_score, highest_score, last_played) VALUES (?, ?, ?, ?)", _
+				Array As Object(username, finalScore, finalScore, formattedDate))
+			
+			Log("Created new record - Total score: " & finalScore & ", High score: " & finalScore)
+			ToastMessageShow("Welcome to the leaderboard!", False)
+		End If
+		
+		cursor.Close
+		
+		sqlDB.ExecNonQuery2("INSERT INTO game_history (username, score, difficulty, played_date) VALUES (?, ?, ?, ?)", _
+			Array As Object(username, finalScore, difficulty, formattedDate))
+		
+		Log("Game history record added")
+		ToastMessageShow("Score saved: " & finalScore & " points!", False)
+		Log("=== UpdateScoreInLeaderboard SUCCESS ===")
+		
+		DebugDatabaseContents
+
+		RefreshLeaderboard
+		
+	Catch
+		Log("=== UpdateScoreInLeaderboard ERROR ===")
+		Log("Error updating score: " & LastException.Message)
+		ToastMessageShow("Error saving score: " & LastException.Message, True)
+		
+		Try
+			sqlDB.EndTransaction
+		Catch
+			Log("Error during transaction rollback: " & LastException.Message)
+		End Try
+	End Try
+End Sub
+
+Sub DebugDatabaseContents
+	Try
+		Log("=== DATABASE DEBUG ===")
+		Dim cursor As Cursor
+		cursor = sqlDB.ExecQuery("SELECT * FROM leaderboard ORDER BY total_score DESC")
+		Log("Total records in leaderboard: " & cursor.RowCount)
+		
+		If cursor.RowCount > 0 Then
+			For i = 0 To cursor.RowCount - 1
+				cursor.Position = i
+				Log("Record " & (i + 1) & ":")
+				Log("  Username: " & cursor.GetString("username"))
+				Log("  Total Score: " & cursor.GetInt("total_score"))
+				Log("  High Score: " & cursor.GetInt("highest_score"))
+				Log("  Last Played: " & cursor.GetString("last_played"))
+			Next
+		Else
+			Log("No records found in leaderboard table")
+		End If
+		cursor.Close
+		Log("=== DATABASE DEBUG END ===")
+	Catch
+		Log("Error reading database: " & LastException.Message)
+	End Try
+End Sub
+
+Sub CreateGameHistoryTable
+	Try
+		Dim query As String = "CREATE TABLE IF NOT EXISTS game_history (id INTEGER PRIMARY KEY AUTOINCREMENT, " & _
+							  "username TEXT, score INTEGER, difficulty TEXT, played_date TEXT)"
+		sqlDB.ExecNonQuery(query)
+		Log("Game history table created/verified")
+	Catch
+		Log("Error creating game history table: " & LastException.Message)
+	End Try
+End Sub
+
+Sub EnsureTableExists
+	Try
+		Dim query As String = "CREATE TABLE IF NOT EXISTS leaderboard (" & _
+							 "username TEXT PRIMARY KEY, " & _
+							 "total_score INTEGER DEFAULT 0, " & _
+							 "highest_score INTEGER DEFAULT 0, " & _
+							 "last_played TEXT DEFAULT '')"
+		sqlDB.ExecNonQuery(query)
+		Log("Leaderboard table created/verified")
+		
+		CreateGameHistoryTable
+		
+		Try
+			Dim columnCursor As Cursor = sqlDB.ExecQuery("PRAGMA table_info(leaderboard)")
+			
+			Dim hasHighestScore As Boolean = False
+			Dim hasLastPlayed As Boolean = False
+			Dim hasTotalScore As Boolean = False
+			
+			For i = 0 To columnCursor.RowCount - 1
+				columnCursor.Position = i
+				Dim colName As String = columnCursor.GetString("name").ToLowerCase
+				
+				If colName = "highest_score" Then hasHighestScore = True
+				If colName = "last_played" Then hasLastPlayed = True
+				If colName = "total_score" Then hasTotalScore = True
+			Next
+			
+			columnCursor.Close
+			
+			If hasTotalScore = False Then
+				sqlDB.ExecNonQuery("ALTER TABLE leaderboard ADD COLUMN total_score INTEGER DEFAULT 0")
+				Log("Added total_score column")
+			End If
+			
+			If hasHighestScore = False Then
+				sqlDB.ExecNonQuery("ALTER TABLE leaderboard ADD COLUMN highest_score INTEGER DEFAULT 0")
+				Log("Added highest_score column")
+			End If
+			
+			If hasLastPlayed = False Then
+				sqlDB.ExecNonQuery("ALTER TABLE leaderboard ADD COLUMN last_played TEXT DEFAULT ''")
+				Log("Added last_played column")
+			End If
+			
+		Catch
+			Log("Error checking/adding columns: " & LastException.Message)
+		End Try
+		
+	Catch
+		Log("Error ensuring tables exist: " & LastException.Message)
+	End Try
+End Sub
+
+Sub EnsurePlayerInLeaderboard(playerUsername As String)
+	Try
+		If playerUsername = "" Or playerUsername = Null Then
+			Log("Cannot add empty username to leaderboard")
+			Return
+		End If
+		
+		InitializeDatabase
+		
+		Dim cursor As Cursor
+		cursor = sqlDB.ExecQuery2("SELECT username FROM leaderboard WHERE username = ?", Array As String(playerUsername))
+		
+		If cursor.RowCount = 0 Then
+			Dim currentTime As Long = DateTime.Now
+			Dim formattedDate As String = DateTime.Date(currentTime)
+			
+			sqlDB.ExecNonQuery2("INSERT INTO leaderboard (username, total_score, highest_score, last_played) VALUES (?, ?, ?, ?)", _
+				Array As Object(playerUsername, 0, 0, formattedDate))
+			
+			Log("Added new player to leaderboard: " & playerUsername)
+		Else
+			Log("Player already exists in leaderboard: " & playerUsername)
+		End If
+		cursor.Close
+	Catch
+		Log("Error ensuring player in leaderboard: " & LastException.Message)
+	End Try
+End Sub
+
+Sub UpdateLeaderboardDisplay
+	Try
+		InitializeDatabase
+
+		Dim cursor As Cursor
+		Dim displayText As StringBuilder
+		displayText.Initialize
+
+		cursor = sqlDB.ExecQuery("SELECT username, total_score, highest_score, last_played FROM leaderboard ORDER BY total_score DESC")
+
+		If cursor.RowCount > 0 Then
+			For i = 0 To cursor.RowCount - 1
+				cursor.Position = i
+				Dim uname As String = cursor.GetString("username")
+				Dim total As Int = cursor.GetInt("total_score")
+				Dim high As Int = cursor.GetInt("highest_score")
+				Dim lastPlayed As String = cursor.GetString("last_played")
+
+				displayText.Append((i + 1) & ". " & uname).Append(CRLF)
+				displayText.Append("   Total: " & total & " | High: " & high & " | Last Played: " & lastPlayed).Append(CRLF).Append(CRLF)
+			Next
+		Else
+			displayText.Append("No players yet.").Append(CRLF)
+		End If
+
+		cursor.Close
+
+		If lblLeaderboard.IsInitialized Then
+			lblLeaderboard.Text = displayText.ToString
+		Else
+			Log("WARNING: lblLeaderboard not initialized!")
+		End If
+
+
+		Log("Leaderboard updated successfully")
+	Catch
+		Log("Error updating leaderboard display: " & LastException.Message)
+		ToastMessageShow("Error updating leaderboard", True)
+	End Try
+End Sub
+
+
+Public Sub RefreshLeaderboard
+	Try
+		If username <> "" Then
+			EnsurePlayerInLeaderboard(username)
+		End If
+		UpdateLeaderboardDisplay
+	Catch
+		Log("Error in RefreshLeaderboard: " & LastException.Message)
+	End Try
+End Sub
+
+Sub ShowHowToPlay
+	lblHowToPlay.Text = "                            === HOW TO PLAY ===" & CRLF & CRLF & _
+	                    "- Tap  the  ZOMBIES  to  earn  points." & CRLF & CRLF & _
+	                    "- Avoid  tapping  HUMANS!" & CRLF & CRLF & _
+	                    "- You  have  3  lives.  Lose  them  all  and  the  game  ends." & CRLF & CRLF & _
+	                    "- Difficulty increases the spawn speed!" & CRLF
+	             
+
+	pnlStartPanel.Visible = True
+	pnlStartPanel.BringToFront
+End Sub

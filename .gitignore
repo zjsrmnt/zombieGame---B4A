@@ -1,0 +1,4 @@
+# Ignore build outputs
+Objects/
+*.apk
+*.tmp
